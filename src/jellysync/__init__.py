@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import os
 import argparse
 import httpx
 from email.message import EmailMessage
@@ -31,8 +31,18 @@ def download(url):
     with httpx.stream("GET", url) as resp:
         filename = parse_filename(resp.headers["Content-Disposition"])
         filesize = int(resp.headers["Content-Length"])
-        with open(filename, "wb") as fp:
+
+        if os.path.isfile(filename):
+            existing_filesize = os.stat(filename).st_size
+            if filesize == existing_filesize:
+                print(f"Skipping {filename}")
+                return
+            else:
+                print(f"Replacing {filename}")
+        else:
             print(f"Downloading {filename}")
+
+        with open(filename, "wb") as fp:
             with Progress(
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(),
