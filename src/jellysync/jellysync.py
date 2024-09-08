@@ -27,8 +27,13 @@ class JellySync:
     def __post_init__(self):
         os.chdir(self.media_dir)
 
-    def download_season(self, show_id: str, season_id: str):
-        episodes = self.get_episodes(show_id, season_id)
+    def download_series(self, series_id: str):
+        seasons = self.get_seasons(series_id)
+        for season in seasons:
+            self.download_season(series_id, season["Id"])
+
+    def download_season(self, series_id: str, season_id: str):
+        episodes = self.get_episodes(series_id, season_id)
         self.download_items(episodes)
 
     def get_auth_header(self) -> dict[str, str]:
@@ -36,8 +41,14 @@ class JellySync:
             "Authorization": f'MediaBrowser Client="jelly-sync", Token="{self.api_key}"'
         }
 
-    def get_episodes(self, show_id: str, season_id: str):
-        url = f"{self.host_url}/Shows/{show_id}/Episodes?seasonId={season_id}"
+    def get_seasons(self, series_id: str):
+        url = f"{self.host_url}/Shows/{series_id}/Seasons"
+        resp = httpx.get(url, headers=self.get_auth_header())
+        data = resp.json()
+        return data["Items"]
+
+    def get_episodes(self, series_id: str, season_id: str):
+        url = f"{self.host_url}/Shows/{series_id}/Episodes?seasonId={season_id}"
         resp = httpx.get(url, headers=self.get_auth_header())
         data = resp.json()
         return data["Items"]
