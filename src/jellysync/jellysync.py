@@ -115,7 +115,7 @@ class JellySync:
         series = item["SeriesName"]
         episode_id = f"S{item['ParentIndexNumber']:02d}E{item['IndexNumber']:02d}"
         title = item["Name"]
-        ext = item["Container"]
+        ext = item["Container"].split(",")[0]
         return sanitize_filepath(
             os.path.join(
                 "Shows",
