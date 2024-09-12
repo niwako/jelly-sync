@@ -1,31 +1,42 @@
 #!/usr/bin/env python3
-import httpx
 import os
 from dataclasses import dataclass
+from email.message import EmailMessage
+
+import httpx
 from pathvalidate import sanitize_filepath
 from rich import print
 from rich.progress import (
-    Progress,
-    TextColumn,
     BarColumn,
-    TaskProgressColumn,
-    TimeRemainingColumn,
     FileSizeColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
     TotalFileSizeColumn,
     TransferSpeedColumn,
 )
 from rich.text import Text
 
 
+def parse_filename(content_disposition: str) -> str:
+    msg = EmailMessage()
+    msg["content-type"] = content_disposition
+    params = msg["content-type"].params
+    return sanitize_filepath(params["filename"])
+
+
 @dataclass
 class JellySync:
     host_url: str
     api_key: str
-    media_dir: str
+    media_dir: str | None
+    use_content_disposition: bool
     dry_run: bool
 
     def __post_init__(self):
-        os.chdir(self.media_dir)
+        if self.media_dir:
+            os.chdir(self.media_dir)
 
     def download_series(self, series_id: str):
         seasons = self.get_seasons(series_id)
@@ -64,6 +75,8 @@ class JellySync:
 
     def download(self, url: str, filename: str):
         with httpx.stream("GET", url, headers=self.get_auth_header()) as resp:
+            if self.use_content_disposition:
+                filename = parse_filename(resp.headers["Content-Disposition"])
             filesize = int(resp.headers["Content-Length"])
 
             if os.path.isfile(filename):
@@ -90,7 +103,8 @@ class JellySync:
             print(text)
 
             folder = os.path.dirname(filename)
-            os.makedirs(folder, exist_ok=True)
+            if folder:
+                os.makedirs(folder, exist_ok=True)
 
             with open(filename, "wb") as fp:
                 with Progress(

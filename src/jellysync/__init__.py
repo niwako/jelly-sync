@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+
 from .jellysync import JellySync
 
 
@@ -18,7 +19,11 @@ def main():
     parser.add_argument(
         "--media-dir",
         help="The destinatin media folder, e.g. /mnt/media",
-        required=True,
+    )
+    parser.add_argument(
+        "--use-content-disposition",
+        help="Use the filename given by content disposition instead of metadata",
+        action="store_true",
     )
     parser.add_argument(
         "--dry-run",
@@ -52,6 +57,7 @@ def main():
         args.host_url,
         args.api_key,
         args.media_dir,
+        args.use_content_disposition,
         args.dry_run,
     )
 
